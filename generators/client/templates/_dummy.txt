@@ -1,2 +1,0 @@
-hello entity-cards!
-It's dummy.txt
