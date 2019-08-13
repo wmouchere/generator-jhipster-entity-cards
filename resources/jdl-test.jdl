@@ -1,0 +1,4 @@
+entity Entitest {
+    name String required unique
+    number Integer required
+}
