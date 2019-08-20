@@ -121,8 +121,8 @@
                     <%_ if (otherEntityName === 'user') { _%>
                         <%_ if (relationshipType === 'many-to-many') { _%>
                     <span *ngFor="let <%= relationshipFieldName %> of <%= entityInstance %>.<%= relationshipFieldNamePlural %>; let last = last">
-                            {{<%= relationshipFieldName %>.<%= otherEntityField %>}}{{last ? '' : ', '}}
-                        </span>
+                        {{<%= relationshipFieldName %>.<%= otherEntityField %>}}{{last ? '' : ', '}}
+                    </span>
                         <%_ } else { _%>
                             <%_ if (dto === 'no') { _%>
                     {{<%= entityInstance + "." + relationshipFieldName + "?." + otherEntityField %>}}
@@ -180,7 +180,28 @@
     </div>
     <div class="card-columns" *ngIf="<%=entityInstancePlural %>?.length > 0 && toggleDisplay === 'card'">
         <div class="card bg-light" *ngFor="let <%=entityInstance %> of <%=entityInstancePlural %>">
-            <div class="card-header"><h5 class="card-title"><a [routerLink]="['/<%= entityUrl %>', <%= entityInstance %>.id, 'view' ]">{{<%= entityInstance %>.id}}</a></h5></div>
+            <%_ for (idx in fields) {
+                const fieldName = fields[idx].fieldName;
+                const fieldNameCapitalized = fields[idx].fieldNameCapitalized;
+                const fieldType = fields[idx].fieldType;
+                const fieldTypeBlobContent = fields[idx].fieldTypeBlobContent; _%>
+                <%_ if (['byte[]', 'ByteBuffer'].includes(fieldType) && fieldTypeBlobContent === 'image') { _%>
+            <img [src]="'data:' + <%=entityInstance %>.<%=fieldName%>ContentType + ';base64,' + <%=entityInstance %>.<%=fieldName%>" class="card-img-top" alt="<%=entityInstance %> image"/>
+                    <%_ break; _%>
+                <%_ } _%>
+            <%_ } _%>
+            <%_ var thereIsAName = false;
+                for (idx in fields) {
+                    if (fields[idx].fieldName === 'name' && fields[idx].fieldType === 'String') {
+                        thereIsAName = true;
+                        break;
+                    }
+                } _%>
+            <%_ if (thereIsAName) { _%>
+            <div class="card-header"><h5 class="card-title"><a [routerLink]="['/<%= entityUrl %>', <%= entityInstance %>.id, 'view' ]">{{<%= entityInstance %>.name}}</a></h5></div>
+            <%_ } else { _%>
+            <div class="card-header"><h5 class="card-title"><a [routerLink]="['/<%= entityUrl %>', <%= entityInstance %>.id, 'view' ]"><%= entityClassHumanized %> {{<%= entityInstance %>.id}}</a></h5></div>
+            <%_ } _%>
             <div class="card-body">
                 <%_ for (idx in fields) {
                 const fieldName = fields[idx].fieldName;
@@ -188,13 +209,61 @@
                 const fieldType = fields[idx].fieldType;
                 const fieldTypeBlobContent = fields[idx].fieldTypeBlobContent; _%>
                 <%_ if (fields[idx].fieldIsEnum) { _%>
-                <p class="card-text" jhiTranslate="{{'<%= angularAppName %>.<%= fieldType %>.' + <%= entityInstance %>.<%= fieldName %>}}"><%= fieldName %> : {{<%= entityInstance %>.<%= fieldName %>}}</p>
+                <p class="card-text"><span jhiTranslate="<%=`${i18nKeyPrefix}.${fields[idx].fieldName}` %>"><%= fields[idx].fieldNameHumanized %></span> : <span jhiTranslate="{{'<%= angularAppName %>.<%= fieldType %>.' + <%= entityInstance %>.<%= fieldName %>}}">{{<%= entityInstance %>.<%= fieldName %>}}</span></p>
                 <%_ } else if (['Instant', 'ZonedDateTime'].includes(fieldType)) { _%>
                 <p class="card-text"><span jhiTranslate="<%=`${i18nKeyPrefix}.${fields[idx].fieldName}` %>"><%= fields[idx].fieldNameHumanized %></span> : {{<%=entityInstance %>.<%=fieldName%> | date:'medium'}}</p>
                 <%_ } else if (fieldType === 'LocalDate') { _%>
                 <p class="card-text"><span jhiTranslate="<%=`${i18nKeyPrefix}.${fields[idx].fieldName}` %>"><%= fields[idx].fieldNameHumanized %></span> : {{<%=entityInstance %>.<%=fieldName%> | date:'mediumDate'}}</td>
-                <%_ } else { _%>
+                <%_ } else if (!['byte[]', 'ByteBuffer'].includes(fieldType) && !(fieldName === 'name' && fieldType === 'String')){ _%>
                 <p class="card-text"><span jhiTranslate="<%=`${i18nKeyPrefix}.${fields[idx].fieldName}` %>"><%= fields[idx].fieldNameHumanized %></span> : {{<%=entityInstance %>.<%=fieldName%>}}</p>
+                <%_ } _%>
+                <%_ } _%>
+
+                <%_ for (idx in relationships) {
+                const relationshipType = relationships[idx].relationshipType;
+                const ownerSide = relationships[idx].ownerSide;
+                const relationshipFieldName = relationships[idx].relationshipFieldName;
+                const relationshipFieldNamePlural = relationships[idx].relationshipFieldNamePlural;
+                const otherEntityName = relationships[idx].otherEntityName;
+                const otherEntityStateName = relationships[idx].otherEntityStateName;
+                const otherEntityField = relationships[idx].otherEntityField;
+                const otherEntityFieldCapitalized = relationships[idx].otherEntityFieldCapitalized; _%>
+                <%_ if (relationshipType === 'many-to-one'
+                || (relationshipType === 'one-to-one' && ownerSide === true)
+                || (relationshipType === 'many-to-many' && ownerSide === true && pagination === 'no')) { _%>
+                <%_ if (otherEntityName === 'user') { _%>
+                    <%_ if (relationshipType === 'many-to-many') { _%>
+                <p class="card-text"><span jhiTranslate="<%= `${i18nKeyPrefix}.${relationships[idx].relationshipName}` %>"><%= relationships[idx].relationshipNameHumanized %></span> : 
+                    <span *ngFor="let <%= relationshipFieldName %> of <%= entityInstance %>.<%= relationshipFieldNamePlural %>; let last = last">
+                        {{<%= relationshipFieldName %>.<%= otherEntityField %>}}{{last ? '' : ', '}}
+                    </span>
+                </p>
+                    <%_ } else { _%>
+                        <%_ if (dto === 'no') { _%>
+                <p class="card-text"><span jhiTranslate="<%= `${i18nKeyPrefix}.${relationships[idx].relationshipName}` %>"><%= relationships[idx].relationshipNameHumanized %></span> : {{<%= entityInstance + "." + relationshipFieldName + "?." + otherEntityField %>}}</p>
+                        <%_ } else { _%>
+                <p class="card-text"><span jhiTranslate="<%= `${i18nKeyPrefix}.${relationships[idx].relationshipName}` %>"><%= relationships[idx].relationshipNameHumanized %></span> : {{<%= entityInstance + "." + relationshipFieldName + otherEntityFieldCapitalized %>}}</p>
+                        <%_ } _%>
+                    <%_ } _%>
+                <%_ } else { _%>
+                    <%_ if (relationshipType === 'many-to-many') { _%>
+                <p class="card-text"><span jhiTranslate="<%= `${i18nKeyPrefix}.${relationships[idx].relationshipName}` %>"><%= relationships[idx].relationshipNameHumanized %></span> : 
+                    <span *ngFor="let <%= relationshipFieldName %> of <%= entityInstance %>.<%= relationshipFieldNamePlural %>; let last = last">
+                        <a class="form-control-static" [routerLink]="['/<%= otherEntityStateName %>', <%= relationshipFieldName %>?.id, 'view' ]">{{<%= relationshipFieldName %>.<%= otherEntityField %>}}</a>{{last ? '' : ', '}}
+                    </span>
+                </p>
+                    <%_ } else { _%>
+                        <%_ if (dto === 'no') { _%>
+                <div *ngIf="<%= entityInstance + "." + relationshipFieldName %>">
+                    <p class="card-text"><span jhiTranslate="<%= `${i18nKeyPrefix}.${relationships[idx].relationshipName}` %>"><%= relationships[idx].relationshipNameHumanized %></span> : <a [routerLink]="['/<%= otherEntityStateName %>', <%= entityInstance + "." + relationshipFieldName + "?.id" %>, 'view' ]" >{{<%= entityInstance + "." + relationshipFieldName + "?." + otherEntityField %>}}</a></p>
+                </div>
+                    <%_ } else { _%>
+                <div *ngIf="<%= entityInstance + "." + relationshipFieldName + "Id" %>">
+                    <p class="card-text"><span jhiTranslate="<%= `${i18nKeyPrefix}.${relationships[idx].relationshipName}` %>"><%= relationships[idx].relationshipNameHumanized %></span> : <a [routerLink]="['/<%= otherEntityStateName %>', <%= entityInstance + "." + relationshipFieldName + "Id" %> %>, 'view' ]" >{{<%= entityInstance + "." + relationshipFieldName + otherEntityFieldCapitalized %>}}</a></p>
+                </div>
+                        <%_ } _%>
+                    <%_ } _%>
+                <%_ } _%>
                 <%_ } _%>
                 <%_ } _%>
             </div>
